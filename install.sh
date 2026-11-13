@@ -12,7 +12,10 @@ mkdir -p "$apps" "$icons"
 # Reuse the package's own desktop entry and icons; only point Exec at the wrapper.
 c="$(podman create localhost/claude-desktop)"
 podman cp "$c:/usr/share/applications/com.anthropic.Claude.desktop" "$apps/"
-podman cp "$c:/usr/share/icons/hicolor" "$icons/" 2>/dev/null || true
+for s in 16 32 48 128 256; do
+  mkdir -p "$icons/hicolor/${s}x${s}/apps"
+  podman cp "$c:/usr/share/icons/hicolor/${s}x${s}/apps/claude-desktop.png" "$icons/hicolor/${s}x${s}/apps/" 2>/dev/null || true
+done
 podman rm "$c" >/dev/null
 sed -i "s|^Exec=claude-desktop|Exec=$here/claude-desktop.sh|" "$apps/com.anthropic.Claude.desktop"
 
