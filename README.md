@@ -16,7 +16,9 @@ Everything is installed from official sources: Debian's `debian:13` image and An
 ./install.sh
 ```
 
-This builds the image, adds **Claude** to the app grid, and registers it as the `claude://` link handler. The app doesn't update itself on Linux, so re-run `install.sh` to update; it rebuilds the image with the latest `claude-desktop` package.
+This builds the image, adds **Claude** to the app grid, and registers it as the `claude://` link handler. The app doesn't update itself on Linux, so re-run `install.sh` to update. It asks apt inside the current image whether Anthropic's repo has a newer `claude-desktop` (a few seconds), rebuilds only if so, pinned to that version, and removes the replaced image. A running app keeps its version until you restart Claude.
+
+`install.sh` also sets up a systemd user timer, `claude-desktop-update.timer`, that runs it once a day (catching up after the machine was off). When it builds a new version you get a desktop notification to restart Claude. Check it with `systemctl --user list-timers claude-desktop-update.timer` and `journalctl --user -u claude-desktop-update`.
 
 ## Run
 
@@ -72,6 +74,8 @@ The whole session bus is shared, so the app can reach any service on it, not onl
 ## Uninstall
 
 ```sh
+systemctl --user disable --now claude-desktop-update.timer
+rm ~/.config/systemd/user/claude-desktop-update.{service,timer}
 podman rmi localhost/claude-desktop
 rm ~/.local/share/applications/com.anthropic.Claude.desktop
 rm ~/.local/share/icons/hicolor/*/apps/claude-desktop.png

@@ -1,5 +1,9 @@
 # Claude Desktop (official Linux beta) on Debian, per https://code.claude.com/docs/en/desktop-linux
 FROM docker.io/library/debian:13
+# Lets install.sh find and prune this project's old images, and nobody else's.
+LABEL local.claude-desktop-container=1
+# Set by install.sh to the version to install; a new value re-runs the step below, the same value reuses the cache.
+ARG CLAUDE_VERSION=
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
  && curl -fsSLo /usr/share/keyrings/claude-desktop-archive-keyring.asc https://downloads.claude.ai/claude-desktop/key.asc \
@@ -10,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     > /etc/apt/sources.list.d/claude-desktop.list \
  && apt-get update \
  # --no-install-recommends skips the Cowork VM stack (qemu/ovmf); GL/fonts for Electron; gdbus for the xdg-open shim
- && apt-get install -y --no-install-recommends claude-desktop libgl1 libegl1 mesa-vulkan-drivers fonts-dejavu-core libglib2.0-bin \
+ && apt-get install -y --no-install-recommends "claude-desktop${CLAUDE_VERSION:+=$CLAUDE_VERSION}" libgl1 libegl1 mesa-vulkan-drivers fonts-dejavu-core libglib2.0-bin \
  && rm -rf /var/lib/apt/lists/*
 
 # Links (sign-in, docs) open in the host browser via the desktop portal on the shared session bus.
