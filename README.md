@@ -64,6 +64,8 @@ The app runs as your own user (not root), and the container gets only these from
 
 The whole session bus is shared, so the app can reach any service on it, not only the ones above. SELinux labeling is disabled for this container (`label=disable`) so it can use the host sockets.
 
+Claude Code's own sandbox (bubblewrap + socat, [docs](https://code.claude.com/docs/en/sandboxing)) runs inside the container. It needs a fresh `/proc`, which the kernel only allows when nothing in the container's `/proc` is hidden, so the container runs with `unmask=/proc/*`. As your own user that exposes nothing a normal Fedora app couldn't read (`/proc/keys`, `/proc/interrupts`); root-only files like `/proc/kcore` stay unreadable and `/proc/sys` stays unwritable.
+
 ## Known limits
 
 - Linux support is a beta from Anthropic. Computer Use and dictation aren't available on Linux yet.

@@ -5,25 +5,24 @@ set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 img=localhost/claude-desktop
 
-latest=
+latest= old=
 if podman image exists "$img"; then
+  old="$(podman image inspect -f '{{.Id}}' "$img")"
   # Ask apt inside the current image: signed repo, and Debian's own version ordering.
-  policy="$(podman run --rm --entrypoint sh "$img" -c 'apt-get update -qq >/dev/null && apt-cache policy claude-desktop')"
-  installed="$(echo "$policy" | awk '/Installed:/{print $2}')"
-  latest="$(echo "$policy" | awk '/Candidate:/{print $2}')"
+  latest="$(podman run --rm --entrypoint sh "$img" -c 'apt-get update -qq >/dev/null && apt-cache policy claude-desktop' | awk '/Candidate:/{print $2}')"
   case "$latest" in ''|*[!0-9A-Za-z.+~:-]*) echo "Unexpected version from apt: '$latest'" >&2; exit 1 ;; esac
-  if [ "$installed" = "$latest" ]; then
-    echo "Claude Desktop $installed is up to date."
-  else
-    echo "Updating Claude Desktop $installed -> $latest"
-  fi
 fi
-if [ -z "$latest" ] || [ "$installed" != "$latest" ]; then
-  podman build --pull=newer --build-arg CLAUDE_VERSION="$latest" -t claude-desktop "$here"
+# Always build: pinned to $latest, the cache makes it a no-op unless the version, base image or Containerfile changed.
+podman build -q --pull=newer --build-arg CLAUDE_VERSION="$latest" -t claude-desktop "$here" >/dev/null
+version="$(podman run --rm --entrypoint dpkg-query "$img" -W -f '${Version}' claude-desktop)"
+if [ "$(podman image inspect -f '{{.Id}}' "$img")" = "$old" ]; then
+  echo "Claude Desktop $version is up to date."
+else
+  echo "Built Claude Desktop $version."
   # Remove this project's replaced images; one still used by a running app stays until the next update.
   podman image prune -f --filter label=local.claude-desktop-container >/dev/null || true
-  if podman container exists claude-desktop; then echo "Restart Claude to use the new version."; fi
-  [ -z "$latest" ] || notify-send -i claude-desktop "Claude Desktop updated to $latest" "Restart Claude to use it." 2>/dev/null || true
+  if podman container exists claude-desktop; then echo "Restart Claude to use it."; fi
+  [ -z "$old" ] || notify-send -i claude-desktop "Claude Desktop image updated ($version)" "Restart Claude to use it." 2>/dev/null || true
 fi
 
 apps="${XDG_DATA_HOME:-$HOME/.local/share}/applications"

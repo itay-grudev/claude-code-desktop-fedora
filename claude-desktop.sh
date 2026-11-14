@@ -24,6 +24,7 @@ exec /usr/bin/python3 "$here/grantd.py" "$bus" claude-desktop "$data/grants" -- 
   podman run --rm --name claude-desktop \
   --userns=keep-id \
   --security-opt label=disable \
+  --security-opt 'unmask=/proc/*' \
   --device /dev/dri \
   --ipc=host \
   --mount type=tmpfs,dst="$run",tmpfs-mode=0700,U=true \

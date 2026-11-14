@@ -13,8 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
  && echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/claude-desktop-archive-keyring.asc] https://downloads.claude.ai/claude-desktop/apt/stable stable main" \
     > /etc/apt/sources.list.d/claude-desktop.list \
  && apt-get update \
- # --no-install-recommends skips the Cowork VM stack (qemu/ovmf); GL/fonts for Electron; gdbus for the xdg-open shim
+ # --no-install-recommends skips the Cowork VM stack (qemu/ovmf); GL/fonts for Electron; gdbus for the xdg-open shim;
+ # bubblewrap + socat for Claude Code's sandbox (https://code.claude.com/docs/en/sandboxing)
  && apt-get install -y --no-install-recommends "claude-desktop${CLAUDE_VERSION:+=$CLAUDE_VERSION}" libgl1 libegl1 mesa-vulkan-drivers fonts-dejavu-core libglib2.0-bin \
+    bubblewrap socat \
  && rm -rf /var/lib/apt/lists/*
 
 # Links (sign-in, docs) open in the host browser via the desktop portal on the shared session bus.
